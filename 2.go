@@ -22,6 +22,10 @@ func main() {
 	fmt.Printf("%s\n", xor_str)
 }
 
+// XORs 2 byte arrays, assuming that both arguments are of equal length.
+// TODO: check this assumption and throw error if not true.
+// Consider accepting an optional third argument for position within the
+// longer array to XOR the shorter array against.
 func xor(a []byte, b []byte) []byte {
 	c := make([]byte, len(a)+1)
 	for i := range b {
