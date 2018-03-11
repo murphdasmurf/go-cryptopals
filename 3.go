@@ -16,12 +16,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Split up the above ASCII characters to try with XOR.
-	ascii_array := strings.Split(Alphabet, "")
-	for _, letter := range ascii_array {
+	// Split up the alphabet to try with XOR.
+	letter_array := strings.Split(Alphabet, "")
+	for _, letter := range letter_array {
 		byte2 := []byte(letter)
 		xored_slice := xor(byte1, byte2)
-		fmt.Println(string(xored_slice))
+		fmt.Println(frequency(string(xored_slice)))
 	}
 }
 
@@ -60,4 +60,14 @@ func xor(a []byte, b []byte) []byte {
 		}
 	} 
 	return xored
+}
+
+// Converts everything to lowercase to measure the frequency of each letter.
+func frequency(a string) []int {
+	lower_case := strings.Split(Alphabet[:26], "")
+	freq := make([]int, len(lower_case), cap(lower_case))
+	for i, letter := range lower_case {
+		freq[i] = strings.Count(strings.ToLower(a), letter)
+	}
+	return freq
 }
