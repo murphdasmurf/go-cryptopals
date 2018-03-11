@@ -63,11 +63,24 @@ func xor(a []byte, b []byte) []byte {
 }
 
 // Converts everything to lowercase to measure the frequency of each letter.
-func frequency(a string) []int {
+// Note that this expects already decrpted text because it makes use of the
+// letter frequency analysis assuming that case is irrelevant, which is not true of ciphertext.
+func frequency(a string) []float32 {
 	lower_case := strings.Split(Alphabet[:26], "")
 	freq := make([]int, len(lower_case), cap(lower_case))
+	percent := make([]float32, len(lower_case), cap(lower_case))
+	// Store the total number of letters in the string.
+	sum := 0
+	// Count the number of each lowercase letter in the lowered string.
 	for i, letter := range lower_case {
 		freq[i] = strings.Count(strings.ToLower(a), letter)
+		// Increment the sum by the number of letters found.
+		sum += freq[i]
 	}
-	return freq
+	// Now find the percentile represented by each number
+	for i, _ := range freq {
+		percent[i] = float32(freq[i])/float32(sum)
+		
+	}
+	return percent
 }
