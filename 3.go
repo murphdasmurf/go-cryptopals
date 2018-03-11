@@ -7,12 +7,7 @@ import (
 	"log"
 )
 
-// Constants for ASCII characters.
-const (
-	Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	Numerals = "0123456789"
-	Ascii    = Alphabet + Numerals + "~!@#$%^&*()-_+={}[]\\|<,>.?/\"';:`"
-)
+const Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func main() {
 	// Convert the given hex string to a byte slice.
@@ -21,12 +16,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Split up the above ASCII characters to try with XOR.
-	ascii_array := strings.Split(Ascii, "")
+	// Split up the letters to try with XOR.
+	ascii_array := strings.Split(Alphabet, "")
 	for _, letter := range ascii_array {
 		byte2 := []byte(letter)
 		xored_slice := xor(byte1, byte2)
-		fmt.Println(xored_slice)
+		fmt.Printf("%s\n", string(xored_slice[:]))
 	}
 }
 
@@ -38,7 +33,6 @@ func max_len(a []byte, b []byte) int {
 	}
 	return len(a)
 }
-
 
 // Determines the shorter slice (assumed 1 byte) and XORs the longer with it.
 func xor(a []byte, b []byte) []byte {
