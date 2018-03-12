@@ -7,22 +7,12 @@ import (
 	"log"
 )
 
-const Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "
 
 func main() {
-	// Convert the given hex string to a byte slice.
 	const s1 = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
-	byte1, err := hex.DecodeString(s1)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Split up the alphabet to try with XOR.
-	letter_array := strings.Split(Alphabet, "")
-	for _, letter := range letter_array {
-		byte2 := []byte(letter)
-		xored_slice := xor(byte1, byte2)
-		fmt.Println(frequency(string(xored_slice)))
-	}
+	key := get_key(s1)
+	fmt.Println(key)
 }
 
 // Returns the integer length of the longer slice.
@@ -31,6 +21,15 @@ func max_len(a []byte, b []byte) int {
 		return len(b)
 	}
 	return len(a)
+}
+
+// Sum of the number of alphabets in the string.
+func sum_letters(str string) int {
+	sum := 0
+	for _, letter := range Alphabet {
+		sum += strings.Count(string(str), string(letter))
+	}
+	return sum
 }
 
 // Determines the shorter slice and repeatedly XORs the longer with it.
@@ -62,25 +61,32 @@ func xor(a []byte, b []byte) []byte {
 	return xored
 }
 
-// Converts everything to lowercase to measure the frequency of each letter.
-// Note that this expects already decrpted text because it makes use of the
-// letter frequency analysis assuming that case is irrelevant, which is not true of ciphertext.
-func frequency(a string) []float32 {
-	lower_case := strings.Split(Alphabet[:26], "")
-	freq := make([]int, len(lower_case), cap(lower_case))
-	percent := make([]float32, len(lower_case), cap(lower_case))
-	// Store the total number of letters in the string.
-	sum := 0
-	// Count the number of each lowercase letter in the lowered string.
-	for i, letter := range lower_case {
-		freq[i] = strings.Count(strings.ToLower(a), letter)
-		// Increment the sum by the number of letters found.
-		sum += freq[i]
+// Takes an encrypted hex string as input, tries every English letter against it,
+// then counts the number of letters and spaces in the resultant string to guess
+// if it's the correct plaintext. Returns the letter used arrive at the guessed answer.
+func get_key(a string) string {
+	byte1, err := hex.DecodeString(a)
+	if err != nil {
+		log.Fatal(err)
 	}
-	// Now find the percentile represented by each number
-	for i, _ := range freq {
-		percent[i] = float32(freq[i])/float32(sum)
-		
+	// Store the highest number of letters in the string.
+	most_letters := 0
+	// Store the character that was the correct XOR.
+	correct_key := ""
+	// Store the decrypted sentence.
+	plaintext := ""
+	// Split up the alphabet to try with XOR.
+	alphabet_array := strings.Split(Alphabet, "")
+	for _, letter := range alphabet_array {
+		byte2 := []byte(letter)
+		xored_slice := xor(byte1, byte2)
+		sum := sum_letters(string(xored_slice))
+		if sum > most_letters {
+			most_letters = sum
+			correct_key = letter
+			plaintext = string(xored_slice)
+		}
 	}
-	return percent
+	fmt.Println(plaintext)
+	return correct_key
 }
