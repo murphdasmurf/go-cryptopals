@@ -57,7 +57,7 @@ func xor(a []byte, b []byte) []byte {
 				continue
 			} else {
 				for n := 0; n < len(b); n++ {
-					if (i + n >= len(b)) {
+					if (i + n >= len(a)) {
 						break
 					}
 					xored[i+n] = a[i+n] ^ b[n]
