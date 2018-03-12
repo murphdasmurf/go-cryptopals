@@ -43,6 +43,10 @@ func xor(a []byte, b []byte) []byte {
 				continue
 			} else {
 				for n := 0; n < len(a); n++ {
+					// Make sure we don't go out of bounds of the longer slice.
+					if (i + n >= len(b)) {
+						break
+					}
 					xored[i+n] = b[i+n] ^ a[n]
 				}
 			}
@@ -53,6 +57,9 @@ func xor(a []byte, b []byte) []byte {
 				continue
 			} else {
 				for n := 0; n < len(b); n++ {
+					if (i + n >= len(b)) {
+						break
+					}
 					xored[i+n] = a[i+n] ^ b[n]
 				}
 			}
