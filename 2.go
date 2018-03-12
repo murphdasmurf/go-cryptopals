@@ -12,22 +12,51 @@ func main() {
 	fmt.Println(hexor(s1, s2))
 }
 
-// XORs 2 byte slices, assuming that both arguments are of equal length.
-func xor(a []byte, b []byte) []byte {
-	if len(a) != len(b) {
-		log.Fatal("Slices not equal length!")
+// Returns the integer length of the longer slice.
+func max_len(a []byte, b []byte) int {
+	if len(a) < len(b) {
+		return len(b)
 	}
-	c := make([]byte, len(a)+1)
-	for i := range b {
-		c[i] = b[i]
-	}
-	for i := range a {
-		c[i] ^= a[i]
-	}
-	return c
+	return len(a)
 }
 
-// XORs two hex strings using the function above.
+// Determines the shorter slice and repeatedly XORs the longer with it.
+func xor(a []byte, b []byte) []byte {
+	// Make a slice the length of the longer slice to hold the XORed value.
+	xored := make([]byte, max_len(a, b), max_len(a, b))
+	if len(a) < len(b) {
+		for i := range b {
+			// Operate in block the length of the shorter slice.
+			if i%len(a) != 0 {
+				continue
+			} else {
+				for n := 0; n < len(a); n++ {
+					// Make sure to stay within bounds of the longer slice.
+					if (i + n >= len(b)) {
+						break
+					}
+					xored[i+n] = b[i+n] ^ a[n]
+				}
+			}
+		}
+	} else { // Must be len(b) <= len(a), so do the above the other way around.
+		for i := range a {
+			if i%len(b) != 0 {
+				continue
+			} else {
+				for n := 0; n < len(b); n++ {
+					if (i + n >= len(a)) {
+						break
+					}
+					xored[i+n] = a[i+n] ^ b[n]
+				}
+			}
+		}
+	} 
+	return xored
+}
+
+// XORs two hex strings.
 func hexor(s1, s2 string) string {
 	byte1, err := hex.DecodeString(s1)
 	if err != nil {
@@ -37,7 +66,5 @@ func hexor(s1, s2 string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	xor_byte := xor(byte1, byte2)
-	xor_hex := hex.EncodeToString(xor_byte)
-	return xor_hex
+	return hex.EncodeToString(xor(byte1, byte2))
 }
