@@ -7,6 +7,8 @@ import (
 	"log"
 )
 
+// Just iterating through ASCII characters doesn't guess correctly because specials
+// throw it off. Use a static list of acceptable characters instead.
 const Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ,.!?1234567890"
 
 func main() {
@@ -406,7 +408,7 @@ func xor(a []byte, b []byte) []byte {
 
 // Takes an encrypted hex string as input, tries every English letter against it,
 // then counts the number of letters and spaces in the resultant string to guess
-// if it's the correct plaintext. Returns the letter used arrive at the guessed answer.
+// if it's the correct plaintext. Returns the guessed plaintext.
 func decrypt(a string) string {
 	byte1, err := hex.DecodeString(a)
 	if err != nil {
