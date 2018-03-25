@@ -20,40 +20,39 @@ func max_len(a []byte, b []byte) int {
 	return len(a)
 }
 
+// Returns the integer length of the shorter slice.
+func min_len(a []byte, b []byte) int {
+	if len(a) > len(b) {
+		return len(b)
+	}
+	return len(a)
+}
+
 // Determines the shorter slice and repeatedly XORs the longer with it.
 func xor(a []byte, b []byte) []byte {
 	// Make a slice the length of the longer slice to hold the XORed value.
-	xored := make([]byte, max_len(a, b), max_len(a, b))
+	result := make([]byte, max_len(a, b), max_len(a, b))
+	longer := make([]byte, max_len(a, b), max_len(a, b))
+	shorter := make([]byte, min_len(a, b), min_len(a, b))
 	if len(a) < len(b) {
-		for i := range b {
-			// Operate in block the length of the shorter slice.
-			if i%len(a) != 0 {
-				continue
-			} else {
-				for n := 0; n < len(a); n++ {
-					// Make sure to stay within bounds of the longer slice.
-					if (i + n >= len(b)) {
-						break
-					}
-					xored[i+n] = b[i+n] ^ a[n]
-				}
-			}
-		}
-	} else { // Must be len(b) <= len(a), so do the above the other way around.
-		for i := range a {
-			if i%len(b) != 0 {
-				continue
-			} else {
-				for n := 0; n < len(b); n++ {
-					if (i + n >= len(a)) {
-						break
-					}
-					xored[i+n] = a[i+n] ^ b[n]
-				}
-			}
-		}
-	} 
-	return xored
+	  copy(shorter, a)
+	  copy(longer, b)
+	} else {
+	  copy(shorter, b)
+	  copy(longer, a)
+	}
+	// Iterate along in blocks of length shorter.
+	for i := 0; i < len(longer); i += len(shorter) {
+		for n := 0; n < len(shorter); n++ {
+	   		if (i + n >= len(longer)) {
+			  	//fmt.Printf("XOR: I'm out! %d >= %d \n", i+n, len(longer))
+				  break
+			  } else {
+				  result[i+n] = longer[i+n] ^ shorter[n]
+			  }
+		  } // End iterating through characters in key.
+	} // End iterating through ciphertext.
+	return result
 }
 
 // XORs two hex strings.
