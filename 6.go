@@ -46,6 +46,14 @@ func max_len(a []byte, b []byte) int {
 	return len(a)
 }
 
+// Returns the integer length of the shorter slice.
+func min_len(a []byte, b []byte) int {
+	if len(a) > len(b) {
+		return len(b)
+	}
+	return len(a)
+}
+
 // Sum of the number of ASCII characters in the string.
 func sum_letters(str string) int {
 	sum := 0
@@ -56,76 +64,36 @@ func sum_letters(str string) int {
 	return sum
 }
 
-// Determines the shorter slice and repeatedly XORs the longer with it.
-// Returns a string of the binary representation.
+// Returns a string of the binary representation of the XOR.
 func xor_bin(a []byte, b []byte) string {
-	// Make a slice the length of the longer slice to hold the XORed value.
-	xored := make([]byte, max_len(a, b), max_len(a, b))
-	if len(a) < len(b) {
-		for i := range b {
-			// Operate in block the length of the shorter slice.
-			if i%len(a) != 0 {
-				continue
-			} else {
-				for n := 0; n < len(a); n++ {
-					// Make sure we don't go out of bounds of the longer slice.
-					if (i + n >= len(b)) {
-						break
-					}
-					xored[i+n] = b[i+n] ^ a[n]
-				}
-			}
-		}
-	} else { // Must be len(b) <= len(a), so do the above the other way around.
-		for i := range a {
-			if i%len(b) != 0 {
-				continue
-			} else {
-				for n := 0; n < len(b); n++ {
-					if (i + n >= len(a)) {
-						break
-					}
-					xored[i+n] = a[i+n] ^ b[n]
-				}
-			}
-		}
-	}
-	return stringToBin(string(xored))
+	return stringToBin(xor(a, b))
 }
 // Determines the shorter slice and repeatedly XORs the longer with it.
 func xor(a []byte, b []byte) string {
 	// Make a slice the length of the longer slice to hold the XORed value.
-	xored := make([]byte, max_len(a, b), max_len(a, b))
+	result := make([]byte, max_len(a, b), max_len(a, b))
+	longer := make([]byte, max_len(a, b), max_len(a, b))
+	shorter := make([]byte, min_len(a, b), min_len(a, b))
 	if len(a) < len(b) {
-		for i := range b {
-			// Operate in block the length of the shorter slice.
-			if i%len(a) != 0 {
-				continue
-			} else {
-				for n := 0; n < len(a); n++ {
-					// Make sure we don't go out of bounds of the longer slice.
-					if (i + n >= len(b)) {
-						break
-					}
-					xored[i+n] = b[i+n] ^ a[n]
-				}
-			}
-		}
-	} else { // Must be len(b) <= len(a), so do the above the other way around.
-		for i := range a {
-			if i%len(b) != 0 {
-				continue
-			} else {
-				for n := 0; n < len(b); n++ {
-					if (i + n >= len(a)) {
-						break
-					}
-					xored[i+n] = a[i+n] ^ b[n]
-				}
-			}
-		}
+	  copy(shorter, a)
+	  copy(longer, b)
+	} else {
+	  copy(shorter, b)
+	  copy(longer, a)
 	}
-	return string(xored)
+	// Iterate along in blocks of length shorter.
+	for i := 0; i < len(longer); i += len(shorter) {
+		for n := 0; n < len(shorter); n++ {
+	   		if (i + n >= len(longer)) {
+			  	//fmt.Printf("XOR: I'm out! %d >= %d \n", i+n, len(longer))
+				break
+			} else {
+				result[i+n] = longer[i+n] ^ shorter[n]
+			}
+		  } // End iterating through characters in key.
+	} // End iterating through ciphertext.
+	//fmt.Printf("XOR: Done! Len(longer) = %d\n", len(longer))
+	return string(result)
 }
 
 // Take some ciphertext and upper and lower bounds of key length to guess, in bytes.
