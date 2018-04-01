@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"encoding/base64"
 )
@@ -12,11 +13,8 @@ func main() {
 		fmt.Println("error:", err)
 		return
 	}
-	fmt.Printf("Most likely key length: %d\n", guess_key_size(ciphertext, 2, 40))
-	key := get_full_key(ciphertext, guess_key_size(ciphertext, 2, 40))
-	fmt.Printf("Most likely key: %s\n", key)
-	plaintext := decrypt(ciphertext, key)
-	fmt.Printf("Plaintext length: %d\n%s", len(plaintext), plaintext)
+	fmt.Println("key: ", get_full_key(ciphertext, guess_key_size(ciphertext, 3, 41)))
+	fmt.Println(decrypt(ciphertext, get_full_key(ciphertext, guess_key_size(ciphertext, 3, 41))))
 }
 
 // Decrypt a given ciphertext given a key. Returns the plaintext.
@@ -24,8 +22,7 @@ func decrypt(ciphertext []byte, key string) string {
   return xor(ciphertext, []byte(key))
 }
 
-// The sum of the number of differing bits (where XOR is true)
-// is called the Hamming distance.
+// The sum of the number of differing bits (where XOR is true).
 func hamming(a []byte, b []byte) int {
 	return strings.Count(xor_bin(a, b), "1")
 }
@@ -59,7 +56,7 @@ func sum_letters(str string) int {
 	sum := 0
 	alphabet_array := strings.Split(Alphabet, "")
 	for _, letter := range alphabet_array {
-		sum += strings.Count(string(str), string(letter))
+		sum += strings.Count(str, letter)
 	}
 	return sum
 }
@@ -85,40 +82,81 @@ func xor(a []byte, b []byte) string {
 	for i := 0; i < len(longer); i += len(shorter) {
 		for n := 0; n < len(shorter); n++ {
 	   		if (i + n >= len(longer)) {
-			  	//fmt.Printf("XOR: I'm out! %d >= %d \n", i+n, len(longer))
 				break
 			} else {
 				result[i+n] = longer[i+n] ^ shorter[n]
 			}
 		  } // End iterating through characters in key.
 	} // End iterating through ciphertext.
-	//fmt.Printf("XOR: Done! Len(longer) = %d\n", len(longer))
 	return string(result)
+}
+
+// Compute the average normalized Hamming distance of the first 10 blocks.
+// If we don't have enough bytes to average them all once fully, exit with 10.
+func normalized_hamming (ciphertext []byte, keysize int) float64 {
+  if 10*keysize > len(ciphertext) {
+    fmt.Println("Key longer than a third of the length of the ciphertext, returning 10.")
+    return 10.0
+  }
+  // Hold the distances, as a float64. Normalize later.
+  normalized := 0
+	// Compare the first 10 keylength chunks against the previous.
+	for i := 0; i < 10; i++ {
+	  first_chunk := ciphertext[i*keysize:(i+1)*keysize-1]
+	  next_chunk := ciphertext[(i+1)*keysize:(i+2)*keysize-1]
+	  normalized += hamming(first_chunk, next_chunk)
+	}
+	normal_float := float64(normalized)/float64(10*keysize)
+	return normal_float
 }
 
 // Take some ciphertext and upper and lower bounds of key length to guess, in bytes.
 // Returns the most likely key length (smallest normalized Hamming distance between bytes).
 func guess_key_size(ciphertext []byte, lower int, upper int) int {
-	// Store the lowest normalized Hamming distance
-	// (start with the highest, 1).
-	lowest_distance := 1.0
-	// Best guess of key length.
-	best_guess_length := lower
+	normalized := make(map[int]float64)
 	for i := lower; i < upper + 1; i++ {
-		// Cut ciphertext into slices of length i.
-		first_chunk := ciphertext[:i-1]
-		second_chunk := ciphertext[i:2*i-1]
-		third_chunk := ciphertext[2*i:3*i-1]
-		fourth_chunk := ciphertext[3*i:4*i-1]
-		// Compute the normalized Hamming distance between them.
-		normalized := (float64(hamming(first_chunk, second_chunk))/float64(8*i) + float64(hamming(third_chunk, fourth_chunk))/float64(8*i))/2.0
-		// If this is less than the current smallest distance, save this.
-		if normalized < lowest_distance {
-			lowest_distance = normalized
-			best_guess_length = i
-		}
+		normalized[i] = normalized_hamming(ciphertext, i)
 	}
-	return best_guess_length
+	// Return the 4 most likely lengths.
+	sorted := sort_map(normalized, 4)
+	plaintext := ""
+	key := ""
+	// Get the likeliest keys for the likeliest lengths,
+	// and compare which is most likely the plaintext.
+	for length, _ := range sorted {
+	  this_key := get_full_key(ciphertext, length)
+	  this_plaintext := decrypt(ciphertext, this_key)
+	  if sum_letters(this_plaintext)>sum_letters(plaintext) {
+	    plaintext = this_plaintext
+	    key = this_key
+	  }
+	}
+	return len(key)
+}
+
+// Sort the map of normalized Hamming distances
+func sort_map(input map[int]float64, length int) map[int]float64 {
+  // Map to hold the sorted results.
+  sorted := make(map[int]float64)
+  var hamming []float64
+  // Read the values into the slice.
+  for _, normalized := range input {
+    hamming = append(hamming, normalized)
+  }
+  // Sort the normalized edit distances.
+  sort.Float64s(hamming)
+  // Trim it to the desired length.
+  hamming = hamming[:length-1]
+  // For each distance, determine the key length.
+  for i := 0; i < length-1; i++ {
+    for j, normalized := range input {
+      if normalized == hamming[i] {
+        // Add to some new sorted map.
+        sorted[j] = normalized
+      }
+    }
+  }
+  return sorted
 }
 
 // Takes an encrypted byte slice as input, tries all non-special characters against
@@ -130,12 +168,13 @@ func get_key(ciphertext []byte) string {
 	// Store the decryption key.
 	key := ""
 	// Try all non-specials with XOR.
-	for i := 32; i < 126; i++ {
-		xored := string(xor(ciphertext, []byte(string(i))))
+	alphabet_array := strings.Split(Alphabet, "")
+	for _, letter := range alphabet_array {
+		xored := string(xor(ciphertext, []byte(letter)))
 		sum := sum_letters(xored)
 		if sum > most_letters {
 			most_letters = sum
-			key = string(i)
+			key = letter
 		}
 	}
 	return key
@@ -149,8 +188,7 @@ func get_full_key(ciphertext []byte, key_length int) string {
   for i := 0; i < key_length; i++ {
     // Slice to hold the same-position blocks.
     var block []byte
-    // TODO check that this can't go out of bounds.
-    for j := i; j < len(ciphertext); j += key_length {
+    for j := i; j+key_length < len(ciphertext); j += key_length {
       block = append(block,ciphertext[j])
     }
     // Append the single-block answer to the multi-byte key.
@@ -161,6 +199,6 @@ func get_full_key(ciphertext []byte, key_length int) string {
 
 // Just iterating through ASCII characters doesn't guess correctly because specials
 // throw it off. Use a static list of acceptable characters instead.
-const Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "
+const Alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ .,?!:'"
 
 const b64_ciphertext = "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"
