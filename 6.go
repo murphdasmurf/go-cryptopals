@@ -80,6 +80,8 @@ func xor(a []byte, b []byte) string {
 	}
 	// Iterate along in blocks of length shorter.
 	for i := 0; i < len(longer); i += len(shorter) {
+		// While iterating through this shorter block, if we ever
+		// arrive at an out of range indez on the longer, stop.
 		for n := 0; n < len(shorter); n++ {
 	   		if (i + n >= len(longer)) {
 				break
@@ -95,7 +97,7 @@ func xor(a []byte, b []byte) string {
 // If we don't have enough bytes to average them all once fully, exit with 10.
 func normalized_hamming (ciphertext []byte, keysize int) float64 {
   if 10*keysize > len(ciphertext) {
-    fmt.Println("Key longer than a third of the length of the ciphertext, returning 10.")
+    fmt.Println("Key longer than a tenth of the length of the ciphertext, returning 10.")
     return 10.0
   }
   // Hold the distances, as a float64. Normalize later.
@@ -126,7 +128,7 @@ func guess_key_size(ciphertext []byte, lower int, upper int) int {
 	for length, _ := range sorted {
 	  this_key := get_full_key(ciphertext, length)
 	  this_plaintext := decrypt(ciphertext, this_key)
-	  if sum_letters(this_plaintext)>sum_letters(plaintext) {
+	  if sum_letters(this_plaintext) > sum_letters(plaintext) {
 	    plaintext = this_plaintext
 	    key = this_key
 	  }
